@@ -5,13 +5,14 @@
             [compojure.handler :as handler]
 	          [netrunner.lobby :as lobby]
             [taoensso.timbre :as timbre]))
+
 (timbre/refer-timbre)
 
 (defn spawn []
   { :lobby (lobby/init) })
 
 (defroutes app-routes
-  (GET "/" [] (str "Netrunner X Game Server" (System/getProperty "myproject.version") "XXX"))
+  (GET "/" [] (str "Netrunner Game Server"))
   (route/resources "/")
   (route/not-found "Not Found"))
 

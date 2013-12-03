@@ -47,6 +47,8 @@
           game (first (vals (join-game games id "barry")))]
       (is (every? game [:id :owner :created :opp :started :runner :corp])))))
 
-(run-tests 'netrunner.lobby-test)
+(comment
+  (run-tests 'netrunner.lobby-test)
+)
 
 
