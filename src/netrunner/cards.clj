@@ -5,9 +5,7 @@
             [clj-time.format :refer [parse formatters]]
             [slingshot.slingshot :refer [throw+]]
             [clojure.pprint :as pp]
-            [clojure.string :as s]
-            ;[cheshire.core :refer :all]
-            ))
+            [clojure.string :as s]))
 
 (def max-db-age 24) ;hours
 
@@ -62,8 +60,8 @@
       (into {} (map (juxt (comp code->int :code) identity) (:body db))))))
 
 (defn title->id [db title]
-  (letfn [(normalize [s] (-> s s/trim s/lower-case (s/replace #"\s+" " ")))
-          (pattern [s] (re-pattern (str "^.*" (normalize s) ".*$")))]
+  (letfn [(normalize [s] (-> s s/trim s/lower-case (s/replace #"\s+|\n+" " ")))
+          (pattern [s] (re-pattern (str "^(.*)?" (normalize s) "(.*)?$")))]
     (let [results (filter #(re-find (pattern (:title %)) (normalize title)) (vals db))]
       (if (not (empty? results))
         (-> results
@@ -78,4 +76,5 @@
   re regenerate db run following function
   (generate-db)
   (title->id (generate-db) "sure gamble")
+  (title->id (generate-db) "chaos theory: wünderkind")
 )
