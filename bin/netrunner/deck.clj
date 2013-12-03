@@ -1,6 +1,15 @@
 (ns netrunner.deck
   (:require [netrunner.cards :refer :all]
+            [clj-http.client :as http]
+            [slingshot.slingshot :refer [throw+]]
             [clojure.string :as s :refer [split-lines]]))
+
+(defn download-deck [netrunnerdb-id]
+  (let [response (http/get (str "http://netrunnerdb.com/decklist/export/text/" netrunnerdb-id)) 
+        status (:status response)]
+    (if (not= 200 status)
+      (throw+ {:message (str "cannot download deck " netrunnerdb-id " from web") :status status}))
+    (:body response)))
 
 (defn parse-deck [db buf]
   (let [lines  (split-lines buf)
@@ -20,7 +29,8 @@
         deck (map #(repeat (read-string (first %)) (last %)) deck)
         ; make deck flat list, not lists inside list
         deck (flatten deck)]
-    {:identity identity :cards deck}))
+    (if (not (empty? deck)) 
+      {:identity identity :cards deck})))
 
 (defn shuffle-deck [deck]
   (assoc deck :cards (shuffle (:cards deck))))
