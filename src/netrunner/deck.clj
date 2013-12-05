@@ -38,8 +38,8 @@
   (count (:cards deck)))
 
 (defn count-influence [deck]
-  (let [deck-id (get-identity deck)
-        non-faction-cards (remove (partial same-faction? deck-id) (:cards deck))]
+  (let [deck-identity (get-identity deck)
+        non-faction-cards (remove (partial same-faction? deck-identity) (:cards deck))]
     (reduce + (map get-faction-influence non-faction-cards))))
 
 (defn shuffle-deck [deck]
