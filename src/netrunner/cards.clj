@@ -1,7 +1,7 @@
 (ns netrunner.cards
   (:import [java.io FileNotFoundException])
   (:require [clj-http.client :as http]
-            [clj.time.core :as time]
+            [clj-time.core :as time]
             [clj-time.format :refer [parse formatters]]
             [slingshot.slingshot :refer [throw+]]
             [clojure.pprint :as pp]
