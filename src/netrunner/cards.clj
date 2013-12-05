@@ -59,22 +59,24 @@
         (generate-db))
       (into {} (map (juxt (comp code->int :code) identity) (:body db))))))
 
-(defn title->id [db title]
+(def db (atom (generate-db)))
+
+(defn title->id [title]
   (letfn [(normalize [s] (-> s s/trim s/lower-case (s/replace #"\s+|\n+" " ")))
           (pattern [s] (re-pattern (str "^(.*)?" (normalize s) "(.*)?$")))]
-    (let [results (filter #(re-find (pattern (:title %)) (normalize title)) (vals db))]
+    (let [results (filter #(re-find (pattern (:title %)) (normalize title)) (vals @db))]
       (if (not (empty? results))
         (-> results
           first
           :code
           code->int)))))
 
-(defn id->title [db id]
-  (:title (get db id)))
+(defn id->title [id]
+  (:title (get @db id)))
 
 (comment
   re regenerate db run following function
   (generate-db)
-  (title->id (generate-db) "sure gamble")
-  (title->id (generate-db) "chaos theory: wünderkind")
+  (title->id "sure gamble")
+  (title->id "chaos theory: wünderkind")
 )

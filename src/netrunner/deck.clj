@@ -11,10 +11,10 @@
       (throw+ {:message (str "cannot download deck " netrunnerdb-id " from web") :status status}))
     (:body response)))
 
-(defn parse-deck [db buf]
+(defn parse-deck [buf]
   (let [lines  (split-lines buf)
         ; parse cards
-        cards (map (partial title->id db) lines)
+        cards (map title->id lines)
         ; parse quantities
         quantities (map (partial re-find #"^\d") lines)
         ; make ["3" 2046] like pairs - quantity and id
@@ -46,46 +46,42 @@
 
 ;; queries for identity
 
-(defn get-minimum-decksize [db card-id]
-  (get-in db [card-id :minimumdecksize]))
+(defn get-minimum-decksize [card-id]
+  (get-in @db [card-id :minimumdecksize]))
 
-(defn get-influence-limit [db card-id]
-  (get-in db [card-id :influencelimit]))
+(defn get-influence-limit [card-id]
+  (get-in @db [card-id :influencelimit]))
 
 
 ;; queries for all cards
-
-(defn get-title [db card-id]
-  (get-in db [card-id :title]))
+(defn get-title [card-id]
+  (get-in @db [card-id :title]))
               
-(defn get-faction [db card-id]
-  (get-in db [card-id :faction_code]))
+(defn get-faction [card-id]
+  (get-in @db [card-id :faction_code]))
 
-(defn get-faction-influence [db card-id]
-  (get-in db [card-id :factioncost]))
+(defn get-faction-influence [card-id]
+  (get-in @db [card-id :factioncost]))
 
-(defn faction? [db faction card-id]
-  (= faction (get-faction db card-id)))
+(defn faction? [faction card-id]
+  (= faction (get-faction card-id)))
 
-(defn same-faction? [db & card-ids]
-  (apply = (map (partial get-faction db) card-ids)))
+(defn same-faction? [& card-ids]
+  (apply = (map get-faction card-ids)))
 
-(defn valid-deck? [db deck]
+(defn valid-deck? [deck]
   (let [deck-id (get-identity deck)
-        non-faction-cards (remove (partial same-faction? db deck-id) (:cards deck))
-        influence-count (reduce + (map (partial get-faction-influence db) non-faction-cards))]
-    (println non-faction-cards)
-    (println influence-count)
+        non-faction-cards (remove (partial same-faction? deck-id) (:cards deck))
+        influence-count (reduce + (map get-faction-influence non-faction-cards))]
     (and 
-      (>= (get-minimum-decksize db deck-id) (count-deck deck))
-      (<= (get-influence-limit db deck-id) influence-count))))
+      (>= (get-minimum-decksize deck-id) (count-deck deck))
+      (<= (get-influence-limit deck-id) influence-count))))
 
 (comment
-  (get (generate-db) 4027)
-  (parse-deck (generate-db) (slurp "resources/ct.deck" :encoding "UTF-8"))
-  (= 40 (count (parse-deck (generate-db) (slurp "resources/ct.deck" :encoding "UTF-8"))))
-  (shuffle-deck (parse-deck (generate-db) (slurp "resources/ct.deck" :encoding "UTF-8")))
-  (true? (validate-deck (generate-db) (parse-deck (generate-db) (slurp "resources/ct.deck" :encoding "UTF-8"))))
-  (false? (validate-deck (generate-db) (parse-deck (generate-db) (slurp "resources/ct-invalid.deck" :encoding "UTF-8"))))
-  (id->title (generate-db) 4027)
+  (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8"))
+  (= 40 (count (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8"))))
+  (shuffle-deck (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8")))
+  (true? (validate-deck (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8"))))
+  (false? (validate-deck (parse-deck (slurp "resources/ct-invalid.deck" :encoding "UTF-8"))))
+  (id->title 4027)
 )
