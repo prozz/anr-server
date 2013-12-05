@@ -14,7 +14,7 @@
 
 (comment
   (run-tests 'netrunner.cards-test)
-  (run-all-tests #"netrunner.*")
+  (run-all-tests #"netrunner.*-test")
 )
 
 

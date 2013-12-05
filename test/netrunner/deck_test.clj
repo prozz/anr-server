@@ -1,4 +1,4 @@
-(ns netrunner.cards-test
+(ns netrunner.deck-test
   (:use clojure.test
         clojure.repl
         netrunner.cards
@@ -25,7 +25,7 @@
              
 (comment
   (run-tests 'netrunner.cards-test)
-  (run-all-tests #"netrunner.*")
+  (run-all-tests #"netrunner.*-test")
 )
 
 

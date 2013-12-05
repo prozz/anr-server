@@ -49,7 +49,7 @@
 
 (comment
   (run-tests 'netrunner.lobby-test)
-  (run-all-tests #"netrunner.*")
+  (run-all-tests #"netrunner.*-test")
 )
 
 
