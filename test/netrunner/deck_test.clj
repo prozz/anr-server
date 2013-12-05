@@ -18,10 +18,14 @@
                (is (= 1 (get-faction-influence femme-id)))))
     (testing "valid deck"
              (let [deck (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8"))]
-               (is (valid-deck? deck))))
+               (is (valid-deck? deck))
+               (is (= 40 (count-deck deck)))
+               (is (= 15 (count-influence deck)))))
     (testing "invalid deck"
              (let [deck (parse-deck (slurp "resources/ct-invalid.deck" :encoding "UTF-8"))]
-               (is (not (valid-deck? deck))))))
+               (is (not (valid-deck? deck)))
+               (is (= 42 (count-deck deck)))
+               (is (= 21 (count-influence deck))))))
              
 (comment
   (run-tests 'netrunner.cards-test)

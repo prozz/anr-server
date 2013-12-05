@@ -37,6 +37,11 @@
 (defn count-deck [deck]
   (count (:cards deck)))
 
+(defn count-influence [deck]
+  (let [deck-id (get-identity deck)
+        non-faction-cards (remove (partial same-faction? deck-id) (:cards deck))]
+    (reduce + (map get-faction-influence non-faction-cards))))
+
 (defn shuffle-deck [deck]
   (assoc deck :cards (shuffle (:cards deck))))
 
@@ -70,12 +75,9 @@
   (apply = (map get-faction card-ids)))
 
 (defn valid-deck? [deck]
-  (let [deck-id (get-identity deck)
-        non-faction-cards (remove (partial same-faction? deck-id) (:cards deck))
-        influence-count (reduce + (map get-faction-influence non-faction-cards))]
-    (and 
-      (>= (get-minimum-decksize deck-id) (count-deck deck))
-      (<= (get-influence-limit deck-id) influence-count))))
+  (and 
+    (>= (get-minimum-decksize (get-identity deck)) (count-deck deck))
+    (<= (get-influence-limit (get-identity deck)) (count-influence deck))))
 
 (comment
   (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8"))
