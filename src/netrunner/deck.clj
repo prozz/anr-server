@@ -32,8 +32,22 @@
     (if (not (empty? deck)) 
       {:identity identity :cards deck})))
 
-;; queries for deck
+(defn deck-key [side]
+  "key for use in games state map" 
+  (keyword (str (name side) "_deck")))
 
+(defn load-deck 
+  ([game side netrunnerdb-id]
+    (let [deck (parse-deck (download-deck netrunnerdb-id))]
+      (assoc game (deck-key side) deck)))
+  ([game side]
+    (let [file (cond
+                 :corp  "resources/core-set-weyland.deck"
+                 :runner "resources/core-set-gabe.deck")
+          deck (parse-deck (slurp file :encoding "UTF-8"))]
+      (assoc game (deck-key side) deck))))
+
+;; queries for deck
 (defn count-deck [deck]
   (count (:cards deck)))
 
@@ -42,15 +56,11 @@
         non-faction-cards (remove (partial same-faction? deck-identity) (:cards deck))]
     (reduce + (map get-faction-influence non-faction-cards))))
 
-(defn shuffle-deck [deck]
-  (assoc deck :cards (shuffle (:cards deck))))
-
 (defn get-identity [deck]
   (:identity deck))
 
 
 ;; queries for identity
-
 (defn get-minimum-decksize [card-id]
   (get-in @db [card-id :minimumdecksize]))
 
@@ -78,6 +88,14 @@
   (and 
     (>= (get-minimum-decksize (get-identity deck)) (count-deck deck))
     (<= (get-influence-limit (get-identity deck)) (count-influence deck))))
+
+;; deck operations
+(defn shuffle-deck 
+  ([deck]
+    (assoc deck :cards (shuffle (:cards deck))))
+  ([game side]
+    (update-in game [(deck-key side)] shuffle-deck)))
+
 
 (comment
   (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8"))
