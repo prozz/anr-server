@@ -1,10 +1,12 @@
 (ns netrunner.game-test
   (:use clojure.test
         clojure.repl
+        clojure.tools.trace
         netrunner.game
         netrunner.deck
         netrunner.cards
-        netrunner.lobby))
+        netrunner.lobby
+        ))
 
 (defn prepare-game []
   (let [games (create-game {} "john" :corp)
@@ -23,7 +25,8 @@
                       corp-deck (:corp_deck game)
                       runner-deck (:runner_deck game)]
                       (is (not= corp-deck (shuffle-deck game :corp)))
-                      (is (not= runner-deck (shuffle-deck game :runner)))))
+                      (is (not= runner-deck (shuffle-deck game :runner)))
+                      (is (= 46 (count-deck runner-deck)))))
            (testing "starting game without decks"
                     (is (nil? (start-game game))))
            (testing "starting game"
@@ -31,8 +34,17 @@
                                  (load-deck :corp) 
                                  (load-deck :runner)
                                  (start-game))]
-                      (println game))
-                      )))
+                      (println game)))
+           (testing "drawing cards"
+                    (let [game (-> game 
+                                 (load-deck :corp) 
+                                 (load-deck :runner)
+                                 (start-game))
+                          game (trace (draw-card game :runner))
+                          x (println game)]
+                    (is (= 45 (count-deck game :runner)))
+                    ))))
+
 
 (comment
   (run-tests 'netrunner.game-test)

@@ -27,8 +27,8 @@
         deck (remove (comp nil? first) deck)
         ; replace ["3" 2046] with (2046, 2046, 2046)
         deck (map #(repeat (read-string (first %)) (last %)) deck)
-        ; make deck flat list, not lists inside list
-        deck (flatten deck)]
+        ; make deck flat vector, not lists inside list
+        deck (vec (flatten deck))]
     (if (not (empty? deck)) 
       {:identity identity :cards deck})))
 
@@ -41,34 +41,25 @@
     (let [deck (parse-deck (download-deck netrunnerdb-id))]
       (assoc game (deck-key side) deck)))
   ([game side]
-    (let [file (cond
+    (let [file (case side
                  :corp  "resources/core-set-weyland.deck"
                  :runner "resources/core-set-gabe.deck")
           deck (parse-deck (slurp file :encoding "UTF-8"))]
       (assoc game (deck-key side) deck))))
 
-;; queries for deck
-(defn count-deck [deck]
-  (count (:cards deck)))
-
-(defn count-influence [deck]
-  (let [deck-identity (get-identity deck)
-        non-faction-cards (remove (partial same-faction? deck-identity) (:cards deck))]
-    (reduce + (map get-faction-influence non-faction-cards))))
-
 (defn get-identity [deck]
   (:identity deck))
 
+(defn count-deck 
+  ([deck] (count (:cards deck)))
+  ([game side] (count-deck (get-in game [(deck-key side)]))))
 
-;; queries for identity
 (defn get-minimum-decksize [card-id]
   (get-in @db [card-id :minimumdecksize]))
 
 (defn get-influence-limit [card-id]
   (get-in @db [card-id :influencelimit]))
 
-
-;; queries for all cards
 (defn get-title [card-id]
   (get-in @db [card-id :title]))
               
@@ -84,6 +75,11 @@
 (defn same-faction? [& card-ids]
   (apply = (map get-faction card-ids)))
 
+(defn count-influence [deck]
+  (let [deck-identity (get-identity deck)
+        non-faction-cards (remove (partial same-faction? deck-identity) (:cards deck))]
+    (reduce + (map get-faction-influence non-faction-cards))))
+
 (defn valid-deck? [deck]
   (and 
     (>= (get-minimum-decksize (get-identity deck)) (count-deck deck))
@@ -91,11 +87,20 @@
 
 ;; deck operations
 (defn shuffle-deck 
-  ([deck]
-    (assoc deck :cards (shuffle (:cards deck))))
-  ([game side]
-    (update-in game [(deck-key side)] shuffle-deck)))
+  ([deck] (assoc deck :cards (shuffle (:cards deck))))
+  ([game side] (update-in game [(deck-key side)] shuffle-deck)))
 
+(defn peek-at-cards 
+  ([deck n]
+    (let [cards (:cards deck)
+          size (count cards)]
+      (subvec cards (- size n))))
+  ([game side n]
+    (peek-at-cards ((deck-key side) game) n)))
+    
+(defn peek-at-top-card
+  ([deck] (peek-at-cards deck 1))
+  ([game side] (peek-at-cards game side 1)))
 
 (comment
   (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8"))

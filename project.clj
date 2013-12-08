@@ -9,7 +9,8 @@
                  [clj-http "0.7.7"]
                  [clj-time "0.6.0"]
                  [ring "1.2.1"]
-                 [slingshot "0.10.3"]]
+                 [slingshot "0.10.3"]
+                 [org.clojure/tools.trace "0.7.6"]]
   :ring {:handler netrunner.core/web-handler
          :port 8899}
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
