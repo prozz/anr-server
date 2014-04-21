@@ -26,10 +26,8 @@
                (is (not (valid-deck? deck)))
                (is (= 42 (count-deck deck)))
                (is (= 21 (count-influence deck))))))
-             
+
 (comment
-  (run-tests 'netrunner.cards-test)
+  (run-tests 'netrunner.deck-test)
   (run-all-tests #"netrunner.*-test")
 )
-
-

@@ -5,7 +5,7 @@
             [clojure.string :as s :refer [split-lines]]))
 
 (defn download-deck [netrunnerdb-id]
-  (let [response (http/get (str "http://netrunnerdb.com/decklist/export/text/" netrunnerdb-id)) 
+  (let [response (http/get (str "http://netrunnerdb.com/decklist/export/text/" netrunnerdb-id))
         status (:status response)]
     (if (not= 200 status)
       (throw+ {:message (str "cannot download deck " netrunnerdb-id " from web") :status status}))
@@ -28,15 +28,15 @@
         ; replace ["3" 2046] with (2046, 2046, 2046)
         deck (map #(repeat (read-string (first %)) (last %)) deck)
         ; make deck flat vector, not lists inside list
-        deck (vec (flatten deck))]
-    (if (not (empty? deck)) 
+        deck (flatten deck)]
+    (if (not (empty? deck))
       {:identity identity :cards deck})))
 
 (defn deck-key [side]
-  "key for use in games state map" 
+  "key for use in games state map"
   (keyword (str (name side) "_deck")))
 
-(defn load-deck 
+(defn load-deck
   ([game side netrunnerdb-id]
     (let [deck (parse-deck (download-deck netrunnerdb-id))]
       (assoc game (deck-key side) deck)))
@@ -50,7 +50,7 @@
 (defn get-identity [deck]
   (:identity deck))
 
-(defn count-deck 
+(defn count-deck
   ([deck] (count (:cards deck)))
   ([game side] (count-deck (get-in game [(deck-key side)]))))
 
@@ -62,7 +62,7 @@
 
 (defn get-title [card-id]
   (get-in @db [card-id :title]))
-              
+
 (defn get-faction [card-id]
   (get-in @db [card-id :faction_code]))
 
@@ -81,23 +81,21 @@
     (reduce + (map get-faction-influence non-faction-cards))))
 
 (defn valid-deck? [deck]
-  (and 
+  (and
     (>= (get-minimum-decksize (get-identity deck)) (count-deck deck))
     (<= (get-influence-limit (get-identity deck)) (count-influence deck))))
 
 ;; deck operations
-(defn shuffle-deck 
-  ([deck] (assoc deck :cards (shuffle (:cards deck))))
+(defn shuffle-deck
+  ([deck] (update-in deck [:cards] shuffle))
   ([game side] (update-in game [(deck-key side)] shuffle-deck)))
 
-(defn peek-at-cards 
+(defn peek-at-cards
   ([deck n]
-    (let [cards (:cards deck)
-          size (count cards)]
-      (subvec cards (- size n))))
+     (take n (:cards deck)))
   ([game side n]
-    (peek-at-cards ((deck-key side) game) n)))
-    
+     (peek-at-cards ((deck-key side) game) n)))
+
 (defn peek-at-top-card
   ([deck] (peek-at-cards deck 1))
   ([game side] (peek-at-cards game side 1)))

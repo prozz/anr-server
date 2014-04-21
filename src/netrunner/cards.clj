@@ -10,19 +10,20 @@
 (def max-db-age 24) ;hours
 
 (defn download-db []
-  (let [db (http/get "http://netrunnerdb.com/api/search/d:c|r" {:as :json})
+  ; old url:  http://netrunnerdb.com/api/search/d:c|r
+  (let [db (http/get "http://netrunnerdb.com/api/cards" {:as :json})
         status (:status db)]
     (if (not= 200 status)
       (throw+ {:message "cannot download the cards from web" :status status}))
     (spit "/tmp/netrunner.cards" db)))
 
-(defn load-db 
+(defn load-db
   ([] (load-db false))
   ([retry]
     (try
         (read-string (slurp "/tmp/netrunner.cards"))
       (catch FileNotFoundException e
-        (if retry 
+        (if retry
           (throw+ {:message "cannot load db, even after retried download" :ex e}))
         (download-db)
         (load-db true)))))
@@ -53,7 +54,7 @@
 (defn generate-db []
   (let [db (load-db)]
     (if (refresh-needed? db)
-      (do 
+      (do
         (println "refreshing db")
         (download-db)
         (generate-db))
