@@ -29,7 +29,7 @@
         deck (remove (comp nil? first) deck)
         ; replace ["3" 2046] with (2046, 2046, 2046)
         deck (map #(repeat (read-string (first %)) (last %)) deck)
-        ; make deck flat vector, not lists inside list
+        ; make deck flat list, not lists inside list
         deck (flatten deck)]
     (if (not (empty? deck))
       {:identity identity :cards deck})))
@@ -107,12 +107,10 @@
   ([deck] (update-in deck [:cards] rotate-forward))
   ([game side] (update-in game [(deck-key side)] put-top-card-at-the-bottom)))
 
+(defn put-cards-on-top
+  ([deck cards] (update-in deck [:cards] (partial concat cards)))
+  ([game side cards] (update-in game [(deck-key side)] put-on-top cards)))
 
-(comment
-  (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8"))
-  (= 40 (count (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8"))))
-  (shuffle-deck (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8")))
-  (true? (validate-deck (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8"))))
-  (false? (validate-deck (parse-deck (slurp "resources/ct-invalid.deck" :encoding "UTF-8"))))
-  (id->title 4027)
-)
+(defn put-cards-on-bottom
+  ([deck cards] (update-in deck [:cards] concat cards))
+  ([game side cards] (update-in game [(deck-key side)] put-on-bottom cards)))
