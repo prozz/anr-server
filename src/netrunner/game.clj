@@ -32,3 +32,8 @@
   (-> game
       (update-in [(hand-key side)] concat (peek-at-top-card game side))
       (update-in [(deck-key side) :cards] rest)))
+
+(defn draw-cards [game side n]
+  (if (zero? n)
+    game
+    (draw-cards (draw-card game side) side (- n 1))))

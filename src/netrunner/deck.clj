@@ -1,5 +1,7 @@
 (ns netrunner.deck
-  (:require [netrunner.cards :refer :all]
+  (:require
+            [netrunner.util :refer :all]
+            [netrunner.cards :refer :all]
             [clj-http.client :as http]
             [slingshot.slingshot :refer [throw+]]
             [clojure.string :as s :refer [split-lines]]))
@@ -37,15 +39,16 @@
   (keyword (str (name side) "_deck")))
 
 (defn load-deck
-  ([game side netrunnerdb-id]
-    (let [deck (parse-deck (download-deck netrunnerdb-id))]
-      (assoc game (deck-key side) deck)))
+  ([side]
+     (let [file (case side
+                  :corp  "resources/core-set-weyland.deck"
+                  :runner "resources/core-set-gabe.deck")]
+       (parse-deck (slurp file :encoding "UTF-8"))))
   ([game side]
-    (let [file (case side
-                 :corp  "resources/core-set-weyland.deck"
-                 :runner "resources/core-set-gabe.deck")
-          deck (parse-deck (slurp file :encoding "UTF-8"))]
-      (assoc game (deck-key side) deck))))
+     (assoc game (deck-key side) (load-deck)))
+  ([game side netrunnerdb-id]
+     (let [deck (parse-deck (download-deck netrunnerdb-id))]
+       (assoc game (deck-key side) deck))))
 
 (defn get-identity [deck]
   (:identity deck))
@@ -87,7 +90,7 @@
 
 ;; deck operations
 (defn shuffle-deck
-  ([deck] (update-in deck [:cards] shuffle))
+  ([deck] (update-in deck [:cards] (comp seq shuffle)))
   ([game side] (update-in game [(deck-key side)] shuffle-deck)))
 
 (defn peek-at-cards
@@ -99,6 +102,11 @@
 (defn peek-at-top-card
   ([deck] (peek-at-cards deck 1))
   ([game side] (peek-at-cards game side 1)))
+
+(defn put-top-card-at-the-bottom
+  ([deck] (update-in deck [:cards] rotate-forward))
+  ([game side] (update-in game [(deck-key side)] put-top-card-at-the-bottom)))
+
 
 (comment
   (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8"))
