@@ -37,3 +37,15 @@
   (if (zero? n)
     game
     (draw-cards (draw-card game side) side (- n 1))))
+
+(defn discard-card [game side card] game)
+(defn discard-hand [game side] game)
+
+(defn shuffle-discard-into-deck [game side] game)
+
+(defn mulligan [game side]
+  (-> game
+      (discard-hand side)
+      (shuffle-discard-into-deck side)
+      (draw-cards side 5)
+      (assoc (keyword (str (name side) "_mulligan")) true)))

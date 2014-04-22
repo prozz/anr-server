@@ -45,7 +45,7 @@
                   :runner "resources/core-set-gabe.deck")]
        (parse-deck (slurp file :encoding "UTF-8"))))
   ([game side]
-     (assoc game (deck-key side) (load-deck)))
+     (assoc game (deck-key side) (load-deck side)))
   ([game side netrunnerdb-id]
      (let [deck (parse-deck (download-deck netrunnerdb-id))]
        (assoc game (deck-key side) deck))))
@@ -109,8 +109,8 @@
 
 (defn put-cards-on-top
   ([deck cards] (update-in deck [:cards] (partial concat cards)))
-  ([game side cards] (update-in game [(deck-key side)] put-on-top cards)))
+  ([game side cards] (update-in game [(deck-key side)] put-cards-on-top cards)))
 
 (defn put-cards-on-bottom
   ([deck cards] (update-in deck [:cards] concat cards))
-  ([game side cards] (update-in game [(deck-key side)] put-on-bottom cards)))
+  ([game side cards] (update-in game [(deck-key side)] put-cards-on-bottom cards)))
