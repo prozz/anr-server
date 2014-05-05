@@ -59,7 +59,7 @@
   ([deck] (count (:cards deck)))
   ([game side] (count-deck (get-in game [side :deck]))))
 
-(fact "default runner deck has 45 cards"
+(fact "default runner deck has 46 cards"
       (count-deck (load-deck :runner)) => 46)
 (fact "default corp deck loaded as game has 49 cards"
       (count-deck (load-deck {} :corp) :corp) => 49)
