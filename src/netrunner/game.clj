@@ -1,14 +1,34 @@
 (ns netrunner.game
   (:use [netrunner.cards :refer :all]
-        [netrunner.deck :refer :all]))
+        [netrunner.deck :refer :all]
+        [midje.sweet]))
 
 (defn game-ready? [game]
-  (and
-    (contains? game :corp_deck)
-    (contains? game :runner_deck)))
+  (let [corp (get-in game [:corp :deck])
+        runner (get-in game [:runner :deck])]
+    (every? identity (map not-empty [corp runner]))))
 
-(defn hand-key [side]
-  ({:runner :grip :corp :hq} side))
+(fact "game is ready when decks of both players are loaded"
+      (game-ready? {}) => false
+      (game-ready? {:runner {:deck {}}}) => false
+      (game-ready? {:runner {:deck {:id 1}}}) => false
+      (game-ready? {:runner {:deck {}} :corp {:deck {}}}) => false
+      (game-ready? {:runner {:deck {:id 1}} :corp {:deck {:id 1}}}) => true)
+
+(defn starting-clicks [side]
+  ({:runner 4 :corp 3} side))
+
+(fact "corp has 3 and runner has 4 starting clicks"
+      (starting-clicks :corp) => 3
+      (starting-clicks :runner) => 4)
+
+
+(defn start-turn [game side]
+  (-> game
+      (assoc-in [side :clicks] (starting-clicks side))
+      (assoc :current_turn side)
+      ;#(if (= :corp side) (draw-card % side) %)
+      ))
 
 (defn start-game [game]
   "if both decks are loaded prepares all needed game related entities:
@@ -20,18 +40,47 @@
    - bad pubs
   then shuffles decks and draws starting hands"
   (if (game-ready? game)
-    (-> game
-      (merge {:hq '(), :archives '(), :corp_clicks 3, :corp_credits 5, :bad-pubs 0}
-             {:grip '(), :heap '(), :runner_clicks 4, :runner_credits 5, :tags 0})
-      (shuffle-deck :runner)
-      (shuffle-deck :corp))))
+    (-> game ;use deep-merge instead of this crap here
+        (assoc-in [:runner :clicks] 4)
+        (assoc-in [:runner :credits] 5)
+        (assoc-in [:runner :hand] '())
+        (assoc-in [:runner :discard] '())
+        (assoc-in [:corp :clicks] 4)
+        (assoc-in [:corp :credits] 5)
+        (assoc-in [:corp :hand] '())
+        (assoc-in [:corp :discard] '())
+        (merge {:bad-pubs 0 :tags 0})
+        (shuffle-deck :runner)
+        (shuffle-deck :corp))))
 
 (def testing-game (-> {} (load-deck :corp) (load-deck :runner) (start-game)))
 
+(facts "deck loading")
+(comment
+  (is (false? (contains? game :corp_deck)))
+  (is (false? (contains? game :runner_deck)))
+  (is (true? (contains? (load-deck game :corp) :corp_deck)))
+  (is (true? (contains? (load-deck game :runner) :runner_deck))))
+
+(facts "deck shuffling")
+(comment
+  (let [game (-> game (load-deck :corp) (load-deck :runner))
+        corp-deck (get-in game [:corp :deck])
+        runner-deck (get-in game [:runner :deck])]
+    (is (not= corp-deck (shuffle-deck game :corp)))
+    (is (not= runner-deck (shuffle-deck game :runner)))
+    (is (= 46 (count-deck runner-deck)))))
+
+(facts "starting game without decks")
+(comment
+  (is (nil? (start-game game))))
+
+(facts "starting game")
+(facts "drawing cards")
 (defn draw-card [game side]
   (-> game
-      (update-in [(hand-key side)] concat (peek-at-top-card game side))
-      (update-in [(deck-key side) :cards] rest)))
+      (update-in [side :hand] concat (peek-at-top-card game side))
+      (update-in [side :deck :cards] rest)))
 
 (defn draw-cards [game side n]
   (if (zero? n)
@@ -48,4 +97,16 @@
       (discard-hand side)
       (shuffle-discard-into-deck side)
       (draw-cards side 5)
-      (assoc (keyword (str (name side) "_mulligan")) true)))
+      (assoc-in [:corp :mulligan] true)))
+
+(defn tag-runner [game])
+(defn remove-tag [game])
+(defn bad-pub-corp [game])
+(defn remove-bad-pub [game])
+
+(defn play [game card])
+
+(defn click-for-credit [game side])
+(defn click-for-card [game side])
+(defn click-for-resource-trash [game id])
+(defn click-for-tag-removal [game])

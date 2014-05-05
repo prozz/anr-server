@@ -5,7 +5,8 @@
             [clj-time.format :refer [parse formatters]]
             [slingshot.slingshot :refer [throw+]]
             [clojure.pprint :as pp]
-            [clojure.string :as s]))
+            [clojure.string :as s])
+  (:use [midje.sweet]))
 
 (def max-db-age 24) ;hours
 
@@ -75,8 +76,18 @@
 (defn id->title [id]
   (:title (get @db id)))
 
+(facts "cards database"
+       (fact "allows search cards by title, no matter whitespace and case"
+             (title->id "sure gamble") => number?
+             (title->id "Sure gaMble") => number?
+             (title->id " sure gamble ") => number?)
+       (fact "returns nils when cards not found"
+             (title->id "surrrre gambleeee") => nil?)
+       (fact "search by title is same as search by id"
+             (-> "Sure Gamble" title->id id->title) => "Sure Gamble"))
+
 (comment
-  re regenerate db run following function
+  to regenerate db run following function
   (generate-db)
   (title->id "sure gamble")
   (title->id "chaos theory: wünderkind")

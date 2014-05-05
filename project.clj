@@ -14,8 +14,5 @@
   :ring {:handler netrunner.core/web-handler
          :port 8899}
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
-                                  [ring-mock "0.1.5"]]}}
-  :aot :all)
-
-
-
+                                  [midje "1.6.3"]
+                                  [ring-mock "0.1.5"]]}})

@@ -1,4 +1,5 @@
 (ns netrunner.deck
+  (:use [midje.sweet])
   (:require
             [netrunner.util :refer :all]
             [netrunner.cards :refer :all]
@@ -34,10 +35,6 @@
     (if (not (empty? deck))
       {:identity identity :cards deck})))
 
-(defn deck-key [side]
-  "key for use in games state map"
-  (keyword (str (name side) "_deck")))
-
 (defn load-deck
   ([side]
      (let [file (case side
@@ -45,17 +42,27 @@
                   :runner "resources/core-set-gabe.deck")]
        (parse-deck (slurp file :encoding "UTF-8"))))
   ([game side]
-     (assoc game (deck-key side) (load-deck side)))
+     (assoc-in game [side :deck] (load-deck side)))
   ([game side netrunnerdb-id]
      (let [deck (parse-deck (download-deck netrunnerdb-id))]
-       (assoc game (deck-key side) deck))))
+       (assoc-in game [side :deck] deck))))
 
 (defn get-identity [deck]
   (:identity deck))
 
+(fact "default runner deck is gabe"
+      (-> (load-deck :runner) get-identity id->title) => "Gabriel Santiago: Consummate Professional")
+(fact "default corp decks is weyland"
+      (-> (load-deck :corp) get-identity id->title) => "Weyland Consortium: Building a Better World")
+
 (defn count-deck
   ([deck] (count (:cards deck)))
-  ([game side] (count-deck (get-in game [(deck-key side)]))))
+  ([game side] (count-deck (get-in game [side :deck]))))
+
+(fact "default runner deck has 45 cards"
+      (count-deck (load-deck :runner)) => 46)
+(fact "default corp deck loaded as game has 49 cards"
+      (count-deck (load-deck {} :corp) :corp) => 49)
 
 (defn get-minimum-decksize [card-id]
   (get-in @db [card-id :minimumdecksize]))
@@ -88,29 +95,70 @@
     (>= (get-minimum-decksize (get-identity deck)) (count-deck deck))
     (<= (get-influence-limit (get-identity deck)) (count-influence deck))))
 
+(facts "deck properties"
+       (let [deck (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8"))
+             deck-id (get-identity deck)
+             femme-id (title->id "femme fatale")]
+         (fact (get-title deck-id) => "Chaos Theory: Wünderkind")
+         (fact (get-faction deck-id) => "shaper")
+         (fact (get-minimum-decksize deck-id) => 40)
+         (fact (get-influence-limit deck-id) => 15)
+         (fact (same-faction? deck-id deck-id) => true)
+         (fact (same-faction? deck-id femme-id) => false)
+         (fact (get-faction-influence femme-id) => 1)))
+
+(facts "deck validation"
+       (let [deck (parse-deck (slurp "resources/ct.deck" :encoding "UTF-8"))]
+         (fact (valid-deck? deck) => true)
+         (fact (count-deck deck) => 40)
+         (fact (count-influence deck) => 15))
+       (let [deck (parse-deck (slurp "resources/ct-invalid.deck" :encoding "UTF-8"))]
+         (fact (valid-deck? deck) => false)
+         (fact (count-deck deck) => 42)
+         (fact (count-influence deck) => 21)))
+
 ;; deck operations
 (defn shuffle-deck
   ([deck] (update-in deck [:cards] (comp seq shuffle)))
-  ([game side] (update-in game [(deck-key side)] shuffle-deck)))
+  ([game side] (update-in game [side :deck] shuffle-deck)))
+
+(facts "shuffling" (shuffle-deck (load-deck :runner)) =not=> (shuffle-deck (load-deck :runner)))
 
 (defn peek-at-cards
   ([deck n]
      (take n (:cards deck)))
   ([game side n]
-     (peek-at-cards ((deck-key side) game) n)))
+     (peek-at-cards (get-in game [side :deck]) n)))
 
 (defn peek-at-top-card
   ([deck] (peek-at-cards deck 1))
   ([game side] (peek-at-cards game side 1)))
 
-(defn put-top-card-at-the-bottom
+(facts "peeking"
+       (peek-at-top-card {:cards '(1 2 3)}) => '(1)
+       (peek-at-cards {:cards '(1 2 3)} 2) => '(1 2)
+       (peek-at-top-card {:corp {:deck {:cards '(1 2 3)}} :runner {:deck {:cards '(4 5 6)}}} :runner) => '(4))
+
+(defn put-top-card-at-bottom
   ([deck] (update-in deck [:cards] rotate-forward))
-  ([game side] (update-in game [(deck-key side)] put-top-card-at-the-bottom)))
+  ([game side] (update-in game [side :deck] put-top-card-at-bottom)))
+
+(facts "putting at the bottom"
+       (put-top-card-at-bottom {:cards '(1 2 3)}) => {:cards '(2 3 1)}
+       (put-top-card-at-bottom {:corp {:deck {:cards '(1 2 3)}}} :corp) => {:corp {:deck {:cards '(2 3 1)}}})
 
 (defn put-cards-on-top
   ([deck cards] (update-in deck [:cards] (partial concat cards)))
-  ([game side cards] (update-in game [(deck-key side)] put-cards-on-top cards)))
+  ([game side cards] (update-in game [side :deck] put-cards-on-top cards)))
 
-(defn put-cards-on-bottom
+(facts "putting on top"
+       (put-cards-on-top {:cards '(1 2 3)} '(4 5)) => {:cards '(4 5 1 2 3)}
+       (put-cards-on-top {:corp {:deck {:cards '(1 2 3)}}} :corp '(4 5)) => {:corp {:deck {:cards '(4 5 1 2 3)}}})
+
+(defn put-cards-at-bottom
   ([deck cards] (update-in deck [:cards] concat cards))
-  ([game side cards] (update-in game [(deck-key side)] put-cards-on-bottom cards)))
+  ([game side cards] (update-in game [side :deck] put-cards-at-bottom cards)))
+
+(facts "putting at bottom"
+       (put-cards-at-bottom {:cards '(1 2 3)} '(4 5)) => {:cards '(1 2 3 4 5)}
+       (put-cards-at-bottom {:corp {:deck {:cards '(1 2 3)}}} :corp '(4 5)) => {:corp {:deck {:cards '(1 2 3 4 5)}}})
