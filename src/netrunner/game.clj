@@ -45,11 +45,12 @@
         (assoc-in [:runner :credits] 5)
         (assoc-in [:runner :hand] '())
         (assoc-in [:runner :discard] '())
+        (assoc-in [:runner :tags] 0)
         (assoc-in [:corp :clicks] 4)
         (assoc-in [:corp :credits] 5)
         (assoc-in [:corp :hand] '())
         (assoc-in [:corp :discard] '())
-        (merge {:bad-pubs 0 :tags 0})
+        (assoc-in [:corp :bad-pubs] 0)
         (shuffle-deck :runner)
         (shuffle-deck :corp))))
 
@@ -77,6 +78,7 @@
 
 (facts "starting game")
 (facts "drawing cards")
+
 (defn draw-card [game side]
   (-> game
       (update-in [side :hand] concat (peek-at-top-card game side))
@@ -99,10 +101,31 @@
       (draw-cards side 5)
       (assoc-in [:corp :mulligan] true)))
 
-(defn tag-runner [game])
-(defn remove-tag [game])
-(defn bad-pub-corp [game])
-(defn remove-bad-pub [game])
+(defn tag-runner [game]
+  (update-in game [:runner :tags] inc))
+
+(defn remove-tag [game]
+  (let [tags (get-in game [:runner :tags])]
+    (if (pos? tags)
+      (update-in game [:runner :tags] dec))))
+
+(facts "tagging"
+       (tag-runner {:runner {:tags 0}}) => {:runner {:tags 1}}
+       (remove-tag {:runner {:tags 1}}) => {:runner {:tags 0}}
+       (remove-tag {:runner {:tags 0}}) => nil)
+
+(defn bad-pub-corp [game]
+  (update-in game [:corp :bad-pubs] inc))
+
+(defn remove-bad-pub [game]
+  (let [bad-pubs (get-in game [:corp :bad-pubs])]
+    (if (pos? bad-pubs)
+      (update-in game [:corp :bad-pubs] dec))))
+
+(facts "bad pubs"
+       (bad-pub-corp {:corp {:bad-pubs 0}}) => {:corp {:bad-pubs 1}}
+       (remove-bad-pub {:corp {:bad-pubs 1}}) => {:corp {:bad-pubs 0}}
+       (remove-bad-pub {:corp {:bad-pubs 0}}) => nil)
 
 (defn play [game card])
 
