@@ -1,6 +1,8 @@
 (ns netrunner.game
   (:use [netrunner.cards :refer :all]
         [netrunner.deck :refer :all]
+        [netrunner.lobby :refer :all]
+        [netrunner.util :refer :all]
         [midje.sweet]))
 
 (defn game-ready? [game]
@@ -40,44 +42,34 @@
    - bad pubs
   then shuffles decks and draws starting hands"
   (if (game-ready? game)
-    (-> game ;use deep-merge instead of this crap here
-        (assoc-in [:runner :clicks] 4)
-        (assoc-in [:runner :credits] 5)
-        (assoc-in [:runner :hand] '())
-        (assoc-in [:runner :discard] '())
-        (assoc-in [:runner :tags] 0)
-        (assoc-in [:corp :clicks] 4)
-        (assoc-in [:corp :credits] 5)
-        (assoc-in [:corp :hand] '())
-        (assoc-in [:corp :discard] '())
-        (assoc-in [:corp :bad-pubs] 0)
+    (-> game
+        (deep-merge {:runner {:clicks 4 :credits 5 :hand '() :discard '() :tags 0}})
+        (deep-merge {:corp   {:clicks 3 :credits 5 :hand '() :discard '() :bad-pubs 0}})
         (shuffle-deck :runner)
         (shuffle-deck :corp))))
 
-(def testing-game (-> {} (load-deck :corp) (load-deck :runner) (start-game)))
+(fact "created game doesnt contain decks"
+      (let [game (-> {} (create-game "john" :corp) (join-game "barry"))]
+        (get-in game [:corp :deck]) => nil
+        (get-in game [:runner :deck]) => nil))
+(fact "created game cannot be started without decks loaded"
+      (let [game (-> {} (create-game "john" :corp) (join-game "barry"))]
+        (start-game game) => nil))
 
-(facts "deck loading")
-(comment
-  (is (false? (contains? game :corp_deck)))
-  (is (false? (contains? game :runner_deck)))
-  (is (true? (contains? (load-deck game :corp) :corp_deck)))
-  (is (true? (contains? (load-deck game :runner) :runner_deck))))
+(fact "started game contains both decks"
+      (let [game (-> {} (load-deck :corp) (load-deck :runner) (start-game))]
+        (get game :corp) => (contains {:deck anything})
+        (get game :runner) => (contains {:deck anything})))
 
-(facts "deck shuffling")
-(comment
-  (let [game (-> game (load-deck :corp) (load-deck :runner))
-        corp-deck (get-in game [:corp :deck])
-        runner-deck (get-in game [:runner :deck])]
-    (is (not= corp-deck (shuffle-deck game :corp)))
-    (is (not= runner-deck (shuffle-deck game :runner)))
-    (is (= 46 (count-deck runner-deck)))))
+(fact "started game has deck shuffled"
+      (let [game (-> {} (load-deck :corp) (load-deck :runner))
+            corp-deck (get-in game [:corp :deck])
+            runner-deck (get-in game [:runner :deck])]
+        (get-in game [:corp :deck]) => corp-deck
+        (get-in (start-game game) [:corp :deck]) =not=> corp-deck
+        (get-in game [:runner :deck]) => runner-deck
+        (get-in (start-game game) [:runner :deck]) =not=> runner-deck))
 
-(facts "starting game without decks")
-(comment
-  (is (nil? (start-game game))))
-
-(facts "starting game")
-(facts "drawing cards")
 
 (defn draw-card [game side]
   (-> game
@@ -88,6 +80,16 @@
   (if (zero? n)
     game
     (draw-cards (draw-card game side) side (- n 1))))
+
+(facts "drawing cards"
+       (draw-card {:corp {:deck {:cards '(1 2 3)} :hand '()}} :corp) => {:corp {:deck {:cards '(2 3)} :hand '(1)}}
+       (draw-card {:corp {:deck {:cards '()} :hand '()}} :corp) => {:corp {:deck {:cards '()} :hand '()}}
+       (draw-card {:corp {:deck {:cards '()} :hand '(1 2 3)}} :corp) => {:corp {:deck {:cards '()} :hand '(1 2 3)}}
+       (draw-cards {:corp {:deck {:cards '(1 2 3)} :hand '()}} :corp 2) => {:corp {:deck {:cards '(3)} :hand '(1 2)}}
+       (draw-cards {:corp {:deck {:cards '(1 2 3)} :hand '()}} :corp 5) => {:corp {:deck {:cards '()} :hand '(1 2 3)}}
+       (draw-cards {:corp {:deck {:cards '()} :hand '()}} :corp 3) => {:corp {:deck {:cards '()} :hand '()}}
+       (draw-cards {:corp {:deck {:cards '()} :hand '(1 2 3)}} :corp 3) => {:corp {:deck {:cards '()} :hand '(1 2 3)}})
+
 
 (defn discard-card [game side card] game)
 (defn discard-hand [game side] game)

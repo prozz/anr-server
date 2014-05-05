@@ -71,21 +71,33 @@
 (defn remove-game [games id]
   (dissoc games id))
 
-(defn join-game [games id username]
-  (if (contains? games id)
-    (let [game (games id)
-          side (opposite-side (owner-side game))]
-      (assoc games id (merge game {:opp username side username :started (now)})))))
+(defn join-game
+  ([games username]
+     (let [game-id (:id (first (filter awaiting? (vals games))))]
+       (join-game games username game-id)))
+  ([games username id]
+      (if (contains? games id)
+        (let [game (games id)
+              side (opposite-side (owner-side game))]
+          (assoc games id (merge game {:opp username side username :started (now)}))))))
 
 (facts "game joining"
        (fact "cannot join not existing game" (join-game {} 1 "john") => nil)
-       (let [games (create-game {} "john" :corp)
-             game-id (first (keys games))
-             games-after-join (join-game games game-id "barry")
-             game-with-barry (first (vals games-after-join))]
-         (fact "can join exisitng game" games-after-join =not=> nil)
-         (fact "ids match" game-id => (:id game-with-barry))
-         (fact "all game properties are in place" (every? game-with-barry [:id :owner :created :opp :started :runner :corp]) => true)))
+       (fact "without id"
+             (let [games (create-game {} "john" :corp)
+                   game-id (first (keys games))
+                   game-with-barry (first (vals (join-game games "barry")))]
+               (fact "can join existing game" game-with-barry =not=> nil)
+               (fact "ids match" game-id => (:id game-with-barry))
+               (fact "all game properties are in place" (every? game-with-barry [:id :owner :created :opp :started :runner :corp]) => true)))
+       (fact "with id"
+             (let [games (create-game {} "john" :corp)
+                   game-id (first (keys games))
+                   games-after-join (join-game games "barry" game-id)
+                   game-with-barry (first (vals games-after-join))]
+               (fact "can join exisitng game" games-after-join =not=> nil)
+               (fact "ids match" game-id => (:id game-with-barry))
+               (fact "all game properties are in place" (every? game-with-barry [:id :owner :created :opp :started :runner :corp]) => true))))
 
 
 (defn list-games
