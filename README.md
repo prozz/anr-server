@@ -1,13 +1,7 @@
-# netrunner
+# anr-server
 
-A Clojure library designed to ... well, that part is up to you.
+server side logic for android: netrunner game. plan is to build some json based api with it, so that others can build a client on top of it (playing netrunner like real hackers in terminal anyone?). 
+for now it's my clojure learning project.
 
-## Usage
+for some discussion see: http://forum.stimhack.com/t/web-based-game-engine-good-or-bad-idea/849
 
-FIXME
-
-## License
-
-Copyright © 2013 FIXME
-
-Distributed under the Eclipse Public License, the same as Clojure.
