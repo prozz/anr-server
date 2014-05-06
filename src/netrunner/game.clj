@@ -176,14 +176,42 @@
 (defn remove-click [game side]
   (update-in-when pos? game [side :clicks] dec))
 
+(defn has-clicks? [game side]
+  (pos? (get-in game [side :clicks])))
+
 (facts "clicks"
        (add-click {:runner {:clicks 0}} :runner) => {:runner {:clicks 1}}
        (remove-click {:runner {:clicks 1}} :runner) => {:runner {:clicks 0}}
-       (remove-click {:runner {:clicks 0}} :runner) => nil)
+       (remove-click {:runner {:clicks 0}} :runner) => nil
+       (has-clicks? {:runner {:clicks 0}} :runner) => false
+       (has-clicks? {:runner {:clicks 1}} :runner) => true)
 
-(defn click-for-credit [game side])
-(defn click-for-card [game side])
-(defn click-for-resource-trash [game id])
+(defn add-credit [game side]
+  (update-in game [side :credits] inc))
+
+(defn remove-credit [game side]
+  (update-in-when pos? game [side :credits] dec))
+
+(facts "credits"
+       (add-credit {:runner {:credits 0}} :runner) => {:runner {:credits 1}}
+       (remove-credit {:runner {:credits 1}} :runner) => {:runner {:credits 0}}
+       (remove-credit {:runner {:credits 0}} :runner) => nil)
+
+(defn click-for-credit [game side]
+  (when (has-clicks? game side)
+    (-> game
+        remove-click side
+        add-credit side)))
+
+(defn click-for-card [game side]
+  (when (has-clicks? game side)
+    (-> game
+        remove-click side
+        draw-card side)))
+
+(facts "clicking for credits and cards" TODO)
+
 (defn click-for-tag-removal [game])
 
 (defn play [game card])
+(defn click-for-resource-trash [game card])

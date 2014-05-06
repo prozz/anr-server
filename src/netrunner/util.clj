@@ -44,4 +44,5 @@
          (fact (update-in-when odd? m [:c :d] inc) => {:a 1 :b 2 :c {:d 4}})
          (fact (update-in-when even? m [:c :d] inc) => nil)
          (fact (update-in-when odd? m [:a] + 100) => {:a 101 :b 2 :c {:d 3}})
-         (fact (update-in-when odd? m [:c :d] + 100) => {:a 1 :b 2 :c {:d 103}})))
+         (fact (update-in-when odd? m [:c :d] + 100) => {:a 1 :b 2 :c {:d 103}})
+         (fact (update-in-when even? m [:c :d] + 100) => nil)))
