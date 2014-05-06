@@ -119,7 +119,16 @@
        (fact "cannot discard card that's not in hand" (discard-card {:runner {:hand '() :discard '()}} :runner 2) => nil)
        (fact "can do when it's in hand" (discard-card {:runner {:hand '(1 2 3) :discard '()}} :runner 2) => {:runner {:hand '(1 3) :discard '(2)}}))
 
-(defn shuffle-discard-into-deck [game side] game)
+(defn shuffle-discard-into-deck [game side]
+  (-> game
+      (update-in [side :deck :cards] concat (get-in game [side :discard]))
+      (assoc-in [side :discard] '())
+      (shuffle-deck side)))
+
+(facts "shuffle discard pile into deck"
+       (let [result (shuffle-discard-into-deck {:corp {:deck {:cards '(1 2 3)} :discard '(4 5)}} :corp)]
+         (fact "discard is empty" result => (contains {:corp (contains {:discard empty?})}))
+         (fact "deck is full again" result => (contains {:corp (contains {:deck (contains {:cards (contains [1 2 3 4 5] :in-any-order)})})}))))
 
 (defn mulligan [game side]
   (-> game
