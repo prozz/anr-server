@@ -24,14 +24,6 @@
       (starting-clicks :corp) => 3
       (starting-clicks :runner) => 4)
 
-
-(defn start-turn [game side]
-  (-> game
-      (assoc-in [side :clicks] (starting-clicks side))
-      (assoc :current_turn side)
-      ;#(if (= :corp side) (draw-card % side) %)
-      ))
-
 (defn start-game [game]
   "if both decks are loaded prepares all needed game related entities:
    - hq/grip,
@@ -70,6 +62,12 @@
         (get-in game [:runner :deck]) => runner-deck
         (get-in (start-game game) [:runner :deck]) =not=> runner-deck))
 
+(defn start-turn [game side]
+  (-> game
+      (assoc-in [side :clicks] (starting-clicks side))
+      (assoc :current_turn side)
+      ;#(if (= :corp side) (draw-card % side) %)
+      ))
 
 (defn draw-card [game side]
   (-> game
@@ -83,6 +81,7 @@
 
 (facts "drawing cards"
        (draw-card {:corp {:deck {:cards '(1 2 3)} :hand '()}} :corp) => {:corp {:deck {:cards '(2 3)} :hand '(1)}}
+       (draw-card {:corp {:deck {:cards '(2 3)} :hand '(1)}} :corp) => {:corp {:deck {:cards '(3)} :hand '(1 2)}}
        (draw-card {:corp {:deck {:cards '()} :hand '()}} :corp) => {:corp {:deck {:cards '()} :hand '()}}
        (draw-card {:corp {:deck {:cards '()} :hand '(1 2 3)}} :corp) => {:corp {:deck {:cards '()} :hand '(1 2 3)}}
        (draw-cards {:corp {:deck {:cards '(1 2 3)} :hand '()}} :corp 2) => {:corp {:deck {:cards '(3)} :hand '(1 2)}}
@@ -90,9 +89,35 @@
        (draw-cards {:corp {:deck {:cards '()} :hand '()}} :corp 3) => {:corp {:deck {:cards '()} :hand '()}}
        (draw-cards {:corp {:deck {:cards '()} :hand '(1 2 3)}} :corp 3) => {:corp {:deck {:cards '()} :hand '(1 2 3)}})
 
+(defn discard-hand [game side]
+  (-> game
+      (update-in [side :discard] concat (get-in game [side :hand]))
+      (assoc-in [side :hand] '())))
 
-(defn discard-card [game side card] game)
-(defn discard-hand [game side] game)
+(facts "discarding hand"
+       (discard-hand {:corp {:hand '() :discard '()}} :corp) => {:corp {:hand '() :discard '()}}
+       (discard-hand {:corp {:hand '(1 2) :discard '()}} :corp) => {:corp {:hand '() :discard '(1 2)}}
+       (discard-hand {:corp {:hand '(1 2 3) :discard '(4 5)}} :corp) => {:corp {:hand '() :discard '(4 5 1 2 3)}})
+
+(defn in-hand? [game side card]
+  "checks if card is in hand"
+  (boolean (some #{card} (get-in game [side :hand]))))
+
+(facts "cards in hand"
+       (in-hand? {:corp {:hand '()}} :corp 1) => false
+       (in-hand? {:corp {:hand '(1)}} :corp 1) => true
+       (in-hand? {:corp {:hand '(1 2 3)}} :corp 2) => true
+       (in-hand? {:corp {:hand '(1 2 2 1)}} :corp 2) => true)
+
+(defn discard-card [game side card]
+  (when (in-hand? game side card)
+    (-> game
+        (update-in [side :hand] (partial remove-first card))
+        (update-in [side :discard] concat (list card)))))
+
+(facts "discarding cards"
+       (fact "cannot discard card that's not in hand" (discard-card {:runner {:hand '() :discard '()}} :runner 2) => nil)
+       (fact "can do when it's in hand" (discard-card {:runner {:hand '(1 2 3) :discard '()}} :runner 2) => {:runner {:hand '(1 3) :discard '(2)}}))
 
 (defn shuffle-discard-into-deck [game side] game)
 
@@ -101,7 +126,7 @@
       (discard-hand side)
       (shuffle-discard-into-deck side)
       (draw-cards side 5)
-      (assoc-in [:corp :mulligan] true)))
+      (assoc-in [side :mulligan] true)))
 
 (defn tag-runner [game]
   (update-in game [:runner :tags] inc))
