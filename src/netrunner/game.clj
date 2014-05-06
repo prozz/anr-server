@@ -130,12 +130,23 @@
          (fact "discard is empty" result => (contains {:corp (contains {:discard empty?})}))
          (fact "deck is full again" result => (contains {:corp (contains {:deck (contains {:cards (contains [1 2 3 4 5] :in-any-order)})})}))))
 
+(defn mulliganed? [game side]
+  "check if side took mulligan"
+  (boolean (get-in game [side :mulligan])))
+
 (defn mulligan [game side]
-  (-> game
-      (discard-hand side)
-      (shuffle-discard-into-deck side)
-      (draw-cards side 5)
-      (assoc-in [side :mulligan] true)))
+  (when-not (mulliganed? game side)
+    (-> game
+        (discard-hand side)
+        (shuffle-discard-into-deck side)
+        (draw-cards side 5)
+        (assoc-in [side :mulligan] true))))
+
+(facts "mulligan"
+       (let [game {:corp {:deck {:cards '(1 2 3 4 5)} :hand '(6 7 8 9 10)}}]
+         (fact "marked as done" (mulligan game :corp) => (contains {:corp (contains {:mulligan true})}))
+         (fact "cannot take mulligan twice" (-> game (mulligan :corp) (mulligan :corp)) => nil)
+         (fact "after mulligan hand is new" (mulligan game :corp) => (contains {:corp (contains {:hand (five-of number?)})}))))
 
 (defn tag-runner [game]
   (update-in game [:runner :tags] inc))
