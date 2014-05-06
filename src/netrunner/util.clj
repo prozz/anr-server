@@ -32,3 +32,16 @@
       (remove-first 3 '()) => '()
       (remove-first 1 '(1 2 3 1)) => '(2 3 1)
       (remove-first 2 '(1 1 2 2 3)) => '(1 1 2 3))
+
+(defn update-in-when [pred m ks f & args]
+  "updates map value only if predicate is true for it, return nil if it fails"
+  (let [val (get-in m ks)]
+    (when (pred val)
+      (update-in m ks #(apply f % args)))))
+
+(facts "update-in-when"
+       (let [m {:a 1 :b 2 :c {:d 3}}]
+         (fact (update-in-when odd? m [:c :d] inc) => {:a 1 :b 2 :c {:d 4}})
+         (fact (update-in-when even? m [:c :d] inc) => nil)
+         (fact (update-in-when odd? m [:a] + 100) => {:a 101 :b 2 :c {:d 3}})
+         (fact (update-in-when odd? m [:c :d] + 100) => {:a 1 :b 2 :c {:d 103}})))

@@ -152,9 +152,7 @@
   (update-in game [:runner :tags] inc))
 
 (defn remove-tag [game]
-  (let [tags (get-in game [:runner :tags])]
-    (if (pos? tags)
-      (update-in game [:runner :tags] dec))))
+  (update-in-when pos? game [:runner :tags] dec))
 
 (facts "tagging"
        (tag-runner {:runner {:tags 0}}) => {:runner {:tags 1}}
@@ -165,18 +163,27 @@
   (update-in game [:corp :bad-pubs] inc))
 
 (defn remove-bad-pub [game]
-  (let [bad-pubs (get-in game [:corp :bad-pubs])]
-    (if (pos? bad-pubs)
-      (update-in game [:corp :bad-pubs] dec))))
+  (update-in-when pos? game [:corp :bad-pubs] dec))
 
 (facts "bad pubs"
        (bad-pub-corp {:corp {:bad-pubs 0}}) => {:corp {:bad-pubs 1}}
        (remove-bad-pub {:corp {:bad-pubs 1}}) => {:corp {:bad-pubs 0}}
        (remove-bad-pub {:corp {:bad-pubs 0}}) => nil)
 
-(defn play [game card])
+(defn add-click [game side]
+  (update-in game [side :clicks] inc))
+
+(defn remove-click [game side]
+  (update-in-when pos? game [side :clicks] dec))
+
+(facts "clicks"
+       (add-click {:runner {:clicks 0}} :runner) => {:runner {:clicks 1}}
+       (remove-click {:runner {:clicks 1}} :runner) => {:runner {:clicks 0}}
+       (remove-click {:runner {:clicks 0}} :runner) => nil)
 
 (defn click-for-credit [game side])
 (defn click-for-card [game side])
 (defn click-for-resource-trash [game id])
 (defn click-for-tag-removal [game])
+
+(defn play [game card])
