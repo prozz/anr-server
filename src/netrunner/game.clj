@@ -154,10 +154,15 @@
 (defn remove-tag [game]
   (update-in-when pos? game [:runner :tags] dec))
 
+(defn has-tags? [game]
+  (pos? (get-in game [:runner :tags])))
+
 (facts "tagging"
        (tag-runner {:runner {:tags 0}}) => {:runner {:tags 1}}
        (remove-tag {:runner {:tags 1}}) => {:runner {:tags 0}}
-       (remove-tag {:runner {:tags 0}}) => nil)
+       (remove-tag {:runner {:tags 0}}) => nil
+       (has-tags? {:runner {:tags 0}}) => false
+       (has-tags? {:runner {:tags 1}}) => true)
 
 (defn bad-pub-corp [game]
   (update-in game [:corp :bad-pubs] inc))
@@ -209,9 +214,16 @@
         remove-click side
         draw-card side)))
 
-(facts "clicking for credits and cards" TODO)
+(defn click-for-tag-removal [game]
+  (when (and (has-clicks? game)
+             (has-tags? game))
+    (-> game
+        (remove-click :runner)
+        (remove-tag))))
 
-(defn click-for-tag-removal [game])
+(facts "clicking for credits, cards, tags removal" TODO)
+
+
 
 (defn play [game card])
 (defn click-for-resource-trash [game card])
